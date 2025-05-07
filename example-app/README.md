@@ -73,17 +73,16 @@ sudo apt install docker.io docker-compose-plugin
 sudo systemctl enable --now docker  
 sudo usermod -aG docker $USER  
 newgrp docker  # Применить изменения группы без перезагрузки  
+
 2. Создание проекта Laravel
-bash
 # Через Composer  
 composer create-project laravel/laravel example-app  
 cd example-app  
+
 3. Настройка Docker
 Создайте файлы в корне проекта:
 
-Dockerfile:
-
-dockerfile
+# Dockerfile:
 FROM php:8.2-fpm  
 
 RUN apt-get update && apt-get install -y \  
@@ -97,37 +96,53 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
 WORKDIR /var/www/html  
 
 
-docker-compose.yml:
+# docker-compose.yml:
 
 yaml
-services:  
-  app:  
-    build: .  
-    ports: ["8000:8000"]  
-    volumes: [".:/var/www/html"]  
-    depends_on: [mysql]  
-    environment:  
-      DB_HOST: mysql  
-      DB_PORT: 3306  
-      DB_DATABASE: laravel  
-      DB_USERNAME: root  
-      DB_PASSWORD: secret  
+version: '3.8'
 
-  mysql:  
-    image: mysql:8.0  
-    environment:  
-      MYSQL_ROOT_PASSWORD: secret  
-      MYSQL_DATABASE: laravel  
-    volumes: [mysql_data:/var/lib/mysql]  
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: laravel
+      DB_USERNAME: root
+      DB_PASSWORD: secret
 
-  phpmyadmin:  
-    image: phpmyadmin/phpmyadmin  
-    ports: ["8080:80"]  
-    depends_on: [mysql]  
-    environment:  
-      PMA_HOST: mysql  
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: laravel
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
 
-volumes:  
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    links:
+      - mysql:db
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: secret
+    depends_on:
+      - mysql
+
+volumes:
   mysql_data:
 
   
@@ -141,8 +156,9 @@ DB_PORT=3306
 DB_DATABASE=laravel  
 DB_USERNAME=root  
 DB_PASSWORD=secret  
+
+
 5. Запуск проекта
-bash
 # Собрать и запустить контейнеры  
 docker compose up -d --build  
 
@@ -164,6 +180,8 @@ docker compose logs -f	Просмотр логов
 docker compose exec app bash	Войти в контейнер
 docker compose down	Остановить проект
 docker compose exec app php artisan tinker	Запустить Tinker
+
+
 7. Доступ к сервисам
 Laravel: http://localhost:8000
 
@@ -182,11 +200,15 @@ yaml
 app:  
   environment:  
     - NODE_ENV=development  
+
+    
 Установите Node.js зависимости:
 
 bash
 docker compose exec app npm install  
 docker compose exec app npm run dev  
+
+
 Если нужно остановить проект:
 
 bash
