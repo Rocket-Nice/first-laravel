@@ -66,87 +66,88 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 
 
 
-1. Установка Docker (если ещё нет)
-bash
+# Laravel + Docker Starter
+
+Проект для быстрого разворачивания Laravel-приложения в Docker-окружении.
+
+## # Установка Docker (если ещё нет)
+
 sudo apt update  
 sudo apt install docker.io docker-compose-plugin  
 sudo systemctl enable --now docker  
 sudo usermod -aG docker $USER  
-newgrp docker  # Применить изменения группы без перезагрузки  
+newgrp docker  # Применить изменения группы без перезагрузки
 
-2. Создание проекта Laravel
-# Через Composer  
+# Создание проекта Laravel
+bash
 composer create-project laravel/laravel example-app  
-cd example-app  
+cd example-app
 
-3. Настройка Docker
+# Настройка Docker
 Создайте файлы в корне проекта:
 
-# Dockerfile:
+Dockerfile:
+--- Базовый образ (PHP 8.2 + FPM)
 FROM php:8.2-fpm  
 
-RUN apt-get update && apt-get install -y \  
-    git curl libzip-dev libpng-dev libonig-dev \  
-    libxml2-dev zip unzip && \  
-    docker-php-ext-install pdo_mysql zip gd  
+--- Установка зависимостей (git, curl, библиотеки для PHP)
+RUN apt-get update && apt-get install -y \
+    git curl libpng-dev libonig-dev libxml2-dev zip unzip \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-RUN curl -sS https://getcomposer.org/installer | php -- \  
-    --install-dir=/usr/local/bin --filename=composer  
+--- Установка Composer (менеджер пакетов для PHP)
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-WORKDIR /var/www/html  
+--- Рабочая папка (здесь будет лежать Laravel)
+WORKDIR /var/www/html
 
 
 # docker-compose.yml:
-
-yaml
 version: '3.8'
 
 services:
+  --- Контейнер с PHP (Laravel)
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .  # Собирает из Dockerfile
     volumes:
-      - ./:/var/www/html
+      - ./:/var/www/html  # Синхронизация кода Laravel
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Проброс порта для artisan serve
     depends_on:
-      - mysql
+      - mysql  # Ждёт запуска MySQL
     environment:
-      DB_HOST: mysql
+      DB_HOST: mysql  # Переменные для Laravel (.env)
       DB_PORT: 3306
       DB_DATABASE: laravel
       DB_USERNAME: root
       DB_PASSWORD: secret
 
+  --- Контейнер с MySQL
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0  # Готовый образ MySQL
     environment:
-      MYSQL_ROOT_PASSWORD: secret
-      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: secret  # Пароль root
+      MYSQL_DATABASE: laravel  # Автоматическое создание БД
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql  # Сохранение данных БД
     ports:
-      - "3306:3306"
+      - "3307:3306"  # Доступ к MySQL с хоста (через 3307)
 
+  --- Контейнер с phpMyAdmin (веб-интерфейс для MySQL)
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    links:
-      - mysql:db
     ports:
-      - "8080:80"
+      - "8080:80"  # Доступ через http://localhost:8080
     environment:
-      PMA_HOST: mysql
-      PMA_USER: root
-      PMA_PASSWORD: secret
-    depends_on:
-      - mysql
+      PMA_HOST: mysql  # Подключение к MySQL-контейнеру
 
+--- Настройки сети и томов
+networks:
+  laravel_network:  # Сеть для связи контейнеров
 volumes:
-  mysql_data:
+  mysql_data:  # Постоянное хранилище для MySQL
 
-  
-4. Настройка .env
+# Настройка .env
 Замените в файле .env следующие строки:
 
 env
@@ -155,63 +156,54 @@ DB_HOST=mysql
 DB_PORT=3306  
 DB_DATABASE=laravel  
 DB_USERNAME=root  
-DB_PASSWORD=secret  
+DB_PASSWORD=secret
 
+# Запуск проекта
+# Собрать и запустить контейнеры
+docker-compose up -d --build
 
-5. Запуск проекта
-# Собрать и запустить контейнеры  
-docker compose up -d --build  
+# Установить зависимости PHP
+docker-compose exec app composer install
 
-# Установить зависимости PHP  
-docker compose exec app composer install  
+# Сгенерировать ключ приложения
+docker-compose exec app php artisan key:generate
 
-# Сгенерировать ключ приложения  
-docker compose exec app php artisan key:generate  
+# Выполнить миграции
+docker-compose exec app php artisan migrate
 
-# Выполнить миграции  
-docker compose exec app php artisan migrate  
+# Запустить сервер разработки
+docker-compose exec app php artisan serve --host=0.0.0.0 --port=8000
 
-# Запустить сервер разработки  
-docker compose exec app php artisan serve --host=0.0.0.0 --port=8000  
-6. Полезные команды
+# Полезные команды
 Команда	Описание
-docker compose ps	Статус контейнеров
-docker compose logs -f	Просмотр логов
-docker compose exec app bash	Войти в контейнер
-docker compose down	Остановить проект
-docker compose exec app php artisan tinker	Запустить Tinker
+docker-compose ps	Статус контейнеров
+docker-compose logs -f	Просмотр логов
+docker-compose exec app bash	Войти в контейнер
+docker-compose down	Остановить проект
+docker-compose exec app php artisan tinker	Запустить Tinker
 
-
-7. Доступ к сервисам
+# Доступ к сервисам
 Laravel: http://localhost:8000
 
 phpMyAdmin: http://localhost:8080
-
 Логин: root
-
 Пароль: secret
 
-8. Дополнительные настройки (по желанию)
-Для разработки с Hot-Reload:
-
-Добавьте в docker-compose.yml:
+# Дополнительные настройки (по желанию)
+Для разработки с Hot-Reload добавьте в docker-compose.yml:
 
 yaml
 app:  
   environment:  
-    - NODE_ENV=development  
-
-    
+    - NODE_ENV=development
 Установите Node.js зависимости:
 
 bash
-docker compose exec app npm install  
-docker compose exec app npm run dev  
-
-
+docker-compose exec app npm install  
+docker-compose exec app npm run dev
 Если нужно остановить проект:
 
 bash
-docker compose down  
-# С данными БД:  
-docker compose down --volumes  
+docker-compose down
+# С данными БД:
+docker-compose down --volumes
