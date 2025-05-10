@@ -24,6 +24,27 @@ class PostController extends Controller
     public function create()
     {
         return view('posts.create');
+        // Вариант вручную добавлять данные
+        // $postsArr = [
+        //     [
+        //         'title' => 'New title name',
+        //         'content' => 'govno content',
+        //         'image' => 'image.jpg',
+        //         'likes' => 20,
+        //         'is_published' => 1
+        //     ],
+        //     [
+        //         'title' => 'Другие данные',
+        //         'content' => 'Другие данные',
+        //         'image' => 'image2.jpg',
+        //         'likes' => 21,
+        //         'is_published' => 2
+        //     ]
+        // ];
+
+        // foreach ($postsArr as $key) {
+        //     Post::create($key);
+        // }
     }
 
     /**
@@ -37,7 +58,10 @@ class PostController extends Controller
             // 'email' => 'required|email|unique:users',
         ]);
 
+        // Затягивает целиком данные формы
         // Post::create($request->all());
+
+        // Только валидированные
         Post::create($validated);
         return redirect()->route('posts.index');
     }
