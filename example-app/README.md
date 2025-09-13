@@ -171,6 +171,9 @@ docker-compose exec app php artisan key:generate
 # Выполнить миграции
 docker-compose exec app php artisan migrate
 
+# Обновить существующую миграцию (удалит нынешние данные!)
+docker-compose exec app php artisan migrate:fresh
+
 # Запустить сервер разработки
 docker-compose exec app php artisan serve --host=0.0.0.0 --port=8000
 
@@ -207,3 +210,9 @@ bash
 docker-compose down
 # С данными БД:
 docker-compose down --volumes
+
+
+# sanctum
+docker-compose exec app composer require laravel/sanctum
+docker-compose exec app php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+docker-compose exec app php artisan migrate
