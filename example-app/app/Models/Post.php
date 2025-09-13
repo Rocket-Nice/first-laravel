@@ -8,12 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Post extends Model
 {
     use HasFactory;
+    use \Illuminate\Database\Eloquent\SoftDeletes;
     protected $table = 'posts';
     protected $quarded = false;
     protected $fillable = [
         'title',
         'content',
         // 'email',
-        // Add any other fields that should be mass assignable
+        'image',
+        'likes',
+        'is_published'
     ];
 }
