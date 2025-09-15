@@ -171,6 +171,9 @@ docker-compose exec app php artisan key:generate
 # Выполнить миграции
 docker-compose exec app php artisan migrate
 
+# Откатить миграцию
+docker-compose exec app php artisan migrate:rollback
+
 # Обновить существующую миграцию (удалит нынешние данные!)
 docker-compose exec app php artisan migrate:fresh
 
